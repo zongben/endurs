@@ -11,12 +11,9 @@ mod webdriver;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-
     let (mut child, driver) = start_web_driver(args.browser).await?;
-
-    if let Err(err) = lua::exec_lua(args.file_path, driver).await {
-        let _ = child.kill().await;
-        return Err(err);
-    }
+    let reuslt = lua::exec_lua(args.file_path, driver).await;
+    let _ = child.kill().await;
+    reuslt?;
     Ok(())
 }

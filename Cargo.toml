@@ -7,7 +7,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.99"
 clap = { version = "4.5.45", features = ["derive"] }
-mlua = { version = "0.11.2", features = ["luajit", "anyhow"] }
+mlua = { version = "0.11.2", features = ["luajit", "anyhow", "async"] }
 reqwest = "0.12.23"
 thirtyfour = "0.36.1"
 tokio = { version = "1.47.1", features = ["full"] }

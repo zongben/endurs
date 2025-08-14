@@ -1,9 +1,9 @@
 use anyhow::Result;
 
-use mlua::{Lua, UserData};
+use mlua::{Error, Lua, UserData};
 use thirtyfour::WebDriver;
 
-struct Api {
+pub struct Api {
     driver: WebDriver,
 }
 
@@ -13,12 +13,21 @@ impl UserData for Api {
             let result = a + b;
             Ok(result)
         });
+
+        methods.add_async_method("goto", |_, this, url: String| async move {
+            this.driver.goto(url).await.map_err(Error::external)?;
+            Ok(())
+        });
+
+        methods.add_async_method("close", |_, this, ()| async move {
+            this.driver.close_window().await.map_err(Error::external)?;
+            Ok(())
+        });
     }
 }
 
 pub fn create_e2e_api(lua: &Lua, driver: WebDriver) -> Result<()> {
-    let api = lua.create_userdata(Api { driver })?;
-
-    lua.globals().set("endura", api)?;
+    let userdata = lua.create_userdata(Api { driver })?;
+    lua.globals().set("endurs", &userdata)?;
     Ok(())
 }

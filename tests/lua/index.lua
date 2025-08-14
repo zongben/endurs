@@ -1,3 +1,2 @@
-local result = endura:add(1, 2)
-
-print(result)
+endurs:goto("https://www.gamer.com.tw/")
+endurs:close()

@@ -35,9 +35,7 @@ pub async fn exec_lua(path_buf: PathBuf, driver: WebDriver) -> Result<()> {
     is_lua_file(path_str)?;
 
     let lua = Lua::new();
-
     create_e2e_api(&lua, driver)?;
-    lua.load(load_file(path_str)?).exec()?;
-
+    lua.load(load_file(path_str)?).exec_async().await?;
     Ok(())
 }
