@@ -7,11 +7,11 @@ use tokio::process::{Child, Command};
 
 use crate::cli::Browser;
 
-async fn wait_for_driver() -> Result<()> {
+async fn wait_for_driver(port: String) -> Result<()> {
     let client = Client::new();
-    let url = "http://127.0.0.1:9515/status";
+    let url = format!("http://127.0.0.1:{}/status", port);
     for _ in 0..50 {
-        if let Ok(resp) = client.get(url).send().await {
+        if let Ok(resp) = client.get(&url).send().await {
             if resp.status().is_success() {
                 return Ok(());
             }
@@ -21,22 +21,21 @@ async fn wait_for_driver() -> Result<()> {
     anyhow::bail!("Driver did not respond in time");
 }
 
-pub async fn start_web_driver(browser: Browser) -> Result<(Child, WebDriver)> {
+pub async fn start_web_driver(browser: Browser, port: String) -> Result<(Child, WebDriver)> {
+    let arg = format!("--port={}", port);
+    let host = format!("http://localhost:{}", port);
+
     let command = match browser {
         Browser::Chrome => "chromedriver",
         Browser::Firefox => "geckodriver",
     };
-    let child = Command::new(command).arg("--port=9515").spawn()?;
+    let child = Command::new(command).arg(arg).spawn()?;
 
-    wait_for_driver().await?;
+    wait_for_driver(port).await?;
 
     let driver = match browser {
-        Browser::Chrome => {
-            WebDriver::new("http://localhost:9515", DesiredCapabilities::chrome()).await?
-        }
-        Browser::Firefox => {
-            WebDriver::new("http://localhost:9515", DesiredCapabilities::firefox()).await?
-        }
+        Browser::Chrome => WebDriver::new(host, DesiredCapabilities::chrome()).await?,
+        Browser::Firefox => WebDriver::new(host, DesiredCapabilities::firefox()).await?,
     };
 
     Ok((child, driver))

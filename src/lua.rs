@@ -1,5 +1,6 @@
 use anyhow::Result;
 use anyhow::anyhow;
+use std::rc::Rc;
 use std::{
     fs::{self},
     path::PathBuf,
@@ -35,7 +36,11 @@ pub async fn exec_lua(path_buf: PathBuf, driver: WebDriver) -> Result<()> {
     is_lua_file(path_str)?;
 
     let lua = Lua::new();
-    create_e2e_api(&lua, driver)?;
+    let rc_driver = Rc::new(driver);
+    create_e2e_api(&lua, rc_driver.clone())?;
     lua.load(load_file(path_str)?).exec_async().await?;
+    if let Ok(driver) = Rc::try_unwrap(rc_driver) {
+        driver.quit().await?;
+    }
     Ok(())
 }

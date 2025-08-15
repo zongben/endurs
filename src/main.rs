@@ -8,10 +8,12 @@ mod cli;
 mod lua;
 mod webdriver;
 
+static ENTRYPOINT_NAME: &str = "endurs";
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    let (mut child, driver) = start_web_driver(args.browser).await?;
+    let (mut child, driver) = start_web_driver(args.browser, args.port).await?;
     let reuslt = lua::exec_lua(args.file_path, driver).await;
     let _ = child.kill().await;
     reuslt?;

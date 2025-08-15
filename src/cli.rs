@@ -13,6 +13,9 @@ pub struct Cli {
     #[arg(long)]
     pub browser: Browser,
 
+    #[arg(long, default_value = "9515")]
+    pub port: String,
+
     #[arg()]
     pub file_path: PathBuf,
 }
