@@ -5,12 +5,6 @@ use anyhow::Result;
 use mlua::{AnyUserData, Error, Lua, UserData};
 use thirtyfour::{By, WebDriver, WebElement};
 
-use crate::ENTRYPOINT_NAME;
-
-struct Assert {}
-
-impl UserData for Assert {}
-
 struct Element {
     elem: WebElement,
 }
@@ -97,22 +91,6 @@ impl UserData for Driver {
     }
 }
 
-pub fn create_e2e_api(lua: &Lua, driver: Rc<WebDriver>) -> Result<()> {
-    let webdriver_userdata = create_webdriver_api(lua, driver)?;
-    let assert_userdata = create_assert_api(lua)?;
-
-    let t = lua.create_table()?;
-    t.set("driver", webdriver_userdata)?;
-    t.set("assert", assert_userdata)?;
-    lua.globals().set(ENTRYPOINT_NAME, t)?;
-
-    Ok(())
-}
-
-fn create_webdriver_api(lua: &Lua, driver: Rc<WebDriver>) -> Result<AnyUserData> {
+pub fn create_webdriver_api(lua: &Lua, driver: Rc<WebDriver>) -> Result<AnyUserData> {
     Ok(lua.create_userdata(Driver { driver })?)
-}
-
-fn create_assert_api(lua: &Lua) -> Result<AnyUserData> {
-    Ok(lua.create_userdata(Assert {})?)
 }

@@ -1,9 +1,12 @@
 local d = endurs.driver
+local t = endurs.assert
+local r = endurs.test_runner
 
-d:goto("https://www.google.com/")
-local query_input = d:find("id", "APjFqb")
-query_input:send_keys("test")
+r:describe("First Test", function (test)
+  test("test 1", function ()
+    print("this is test 1")
+  end)
+end)
 
-local btn = d:find("name", "btnK")
-btn:click()
+
 d:close()

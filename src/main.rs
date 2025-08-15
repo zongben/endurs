@@ -8,8 +8,6 @@ mod cli;
 mod lua;
 mod webdriver;
 
-static ENTRYPOINT_NAME: &str = "endurs";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
