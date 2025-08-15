@@ -45,6 +45,9 @@ pub async fn exec_lua(path_buf: PathBuf, driver: WebDriver) -> Result<()> {
 
     lua.load(load_file(path_str)?).exec_async().await?;
 
+    let runner_ref = runner.borrow();
+    runner_ref.exec_tests().await?;
+
     if let Ok(driver) = Rc::try_unwrap(rc_driver) {
         driver.quit().await?;
     }

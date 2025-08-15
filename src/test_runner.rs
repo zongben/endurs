@@ -1,3 +1,4 @@
+use anyhow::Result;
 use mlua::Function;
 
 pub struct TestCase {
@@ -22,5 +23,12 @@ impl TestRunner {
 
     pub fn get_cases(&self) -> &Vec<TestCase> {
         &self.test_cases
+    }
+
+    pub async fn exec_tests(&self) -> Result<()> {
+        for test in self.test_cases.iter() {
+            test.cb.call_async::<()>(()).await?;
+        }
+        Ok(())
     }
 }
