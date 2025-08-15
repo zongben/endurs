@@ -2,7 +2,11 @@ local d = endurs.driver
 local t = endurs.assert
 local r = endurs.test_runner
 
-r:describe("First Test", function(test)
+r:describe("First Test", function(test, hook)
+  hook.before_each(function ()
+    print("before each")
+  end)
+
 	test("test 1", function()
 		print("this is test 1")
 
