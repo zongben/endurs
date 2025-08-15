@@ -2,12 +2,16 @@ use std::rc::Rc;
 
 use anyhow::Result;
 
-use mlua::{Error, Lua, UserData};
+use mlua::{AnyUserData, Error, Lua, UserData};
 use thirtyfour::{By, WebDriver, WebElement};
 
 use crate::ENTRYPOINT_NAME;
 
-pub struct Element {
+struct Assert {}
+
+impl UserData for Assert {}
+
+struct Element {
     elem: WebElement,
 }
 
@@ -39,11 +43,11 @@ impl UserData for Element {
     }
 }
 
-pub struct Api {
+struct Driver {
     driver: Rc<WebDriver>,
 }
 
-impl UserData for Api {
+impl UserData for Driver {
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
         methods.add_async_method("goto", |_, this, url: String| async move {
             this.driver.goto(url).await.map_err(Error::external)?;
@@ -94,7 +98,21 @@ impl UserData for Api {
 }
 
 pub fn create_e2e_api(lua: &Lua, driver: Rc<WebDriver>) -> Result<()> {
-    let userdata = lua.create_userdata(Api { driver })?;
-    lua.globals().set(ENTRYPOINT_NAME, userdata)?;
+    let webdriver_userdata = create_webdriver_api(lua, driver)?;
+    let assert_userdata = create_assert_api(lua)?;
+
+    let t = lua.create_table()?;
+    t.set("driver", webdriver_userdata)?;
+    t.set("assert", assert_userdata)?;
+    lua.globals().set(ENTRYPOINT_NAME, t)?;
+
     Ok(())
+}
+
+fn create_webdriver_api(lua: &Lua, driver: Rc<WebDriver>) -> Result<AnyUserData> {
+    Ok(lua.create_userdata(Driver { driver })?)
+}
+
+fn create_assert_api(lua: &Lua) -> Result<AnyUserData> {
+    Ok(lua.create_userdata(Assert {})?)
 }

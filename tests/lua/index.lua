@@ -1,9 +1,9 @@
-local e = endurs
+local d = endurs.driver
 
-e:goto("https://www.google.com/")
-local query_input = e:find("id", "APjFqb")
+d:goto("https://www.google.com/")
+local query_input = d:find("id", "APjFqb")
 query_input:send_keys("test")
 
-local btn = e:find("name", "btnK")
+local btn = d:find("name", "btnK")
 btn:click()
-e:close()
+d:close()
