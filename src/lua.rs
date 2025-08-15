@@ -1,5 +1,6 @@
 use anyhow::Result;
 use anyhow::anyhow;
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::{
     fs::{self},
@@ -10,6 +11,7 @@ use thirtyfour::WebDriver;
 use mlua::Lua;
 
 use crate::api::create_e2e_api;
+use crate::test_runner::TestRunner;
 
 fn path_buf_to_str(path_buf: &PathBuf) -> Result<&str> {
     path_buf
@@ -37,8 +39,12 @@ pub async fn exec_lua(path_buf: PathBuf, driver: WebDriver) -> Result<()> {
 
     let lua = Lua::new();
     let rc_driver = Rc::new(driver);
-    create_e2e_api(&lua, rc_driver.clone())?;
+    let runner = Rc::new(RefCell::new(TestRunner::new()));
+
+    create_e2e_api(&lua, rc_driver.clone(), runner.clone())?;
+
     lua.load(load_file(path_str)?).exec_async().await?;
+
     if let Ok(driver) = Rc::try_unwrap(rc_driver) {
         driver.quit().await?;
     }

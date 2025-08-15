@@ -6,6 +6,7 @@ use crate::{cli::Cli, webdriver::start_web_driver};
 mod api;
 mod cli;
 mod lua;
+mod test_runner;
 mod webdriver;
 
 #[tokio::main]
