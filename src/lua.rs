@@ -6,12 +6,13 @@ use std::{
     fs::{self},
     path::PathBuf,
 };
-use thirtyfour::WebDriver;
 
 use mlua::Lua;
 
 use crate::api::create_e2e_api;
+use crate::cli::Browser;
 use crate::test_runner::TestRunner;
+use crate::webdriver::start_web_driver;
 
 fn path_buf_to_str(path_buf: &PathBuf) -> Result<&str> {
     path_buf
@@ -33,23 +34,30 @@ fn load_file(path: &str) -> Result<String> {
     Ok(fs::read_to_string(path)?)
 }
 
-pub async fn exec_lua(path_buf: PathBuf, driver: WebDriver) -> Result<()> {
+pub async fn exec_lua(path_buf: PathBuf, browser: Browser, port: String) -> Result<()> {
     let path_str = path_buf_to_str(&path_buf)?;
     is_lua_file(path_str)?;
 
+    let (mut child, driver) = start_web_driver(browser, port).await?;
+
     let lua = Lua::new();
-    let rc_driver = Rc::new(driver);
     let runner = Rc::new(RefCell::new(TestRunner::new()));
+    let driver = Rc::new(driver);
 
-    create_e2e_api(&lua, rc_driver.clone(), runner.clone())?;
+    let result: Result<()> = (|| async {
+        create_e2e_api(&lua, driver.clone(), runner.clone())?;
+        lua.load(load_file(path_str)?).exec_async().await?;
+        runner.borrow().exec_tests().await?;
+        Ok(())
+    })()
+    .await;
 
-    lua.load(load_file(path_str)?).exec_async().await?;
-
-    let runner_ref = runner.borrow();
-    runner_ref.exec_tests().await?;
-
-    if let Ok(driver) = Rc::try_unwrap(rc_driver) {
+    if let Ok(driver) = Rc::try_unwrap(driver) {
         driver.quit().await?;
     }
-    Ok(())
+
+    let _ = child.kill().await;
+    let _ = child.wait().await;
+
+    result
 }

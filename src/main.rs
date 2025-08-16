@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use crate::{cli::Cli, webdriver::start_web_driver};
+use crate::cli::Cli;
 
 mod api;
 mod cli;
@@ -12,9 +12,8 @@ mod webdriver;
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Cli::parse();
-    let (mut child, driver) = start_web_driver(args.browser, args.port).await?;
-    let reuslt = lua::exec_lua(args.file_path, driver).await;
-    let _ = child.kill().await;
-    reuslt?;
+    lua::exec_lua(args.file_path, args.browser, args.port).await?;
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     Ok(())
 }

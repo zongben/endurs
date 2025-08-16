@@ -28,8 +28,6 @@ struct Runner {
 impl UserData for Runner {
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method_mut("describe", |lua, this, (desc, cb): (String, Function)| {
-            let runner = this.test_runner.clone();
-
             let describe = Rc::new(RefCell::new(Describe::new(desc)));
 
             let test_fn = create_test_fn(lua, describe.clone())?;
@@ -39,7 +37,9 @@ impl UserData for Runner {
             hook_table.set("before_each", before_each_fn)?;
 
             cb.call::<()>((test_fn, hook_table))?;
-            runner.borrow_mut().add_describe(describe.borrow().clone());
+            this.test_runner
+                .borrow_mut()
+                .add_describe(describe.borrow().clone());
             Ok(())
         });
     }

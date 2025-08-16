@@ -5,6 +5,15 @@ use anyhow::Result;
 use mlua::{AnyUserData, Error, Lua, UserData};
 use thirtyfour::{By, WebDriver, WebElement};
 
+fn create_by(by: String, value: String) -> Result<By> {
+    let by = match by.as_str() {
+        "id" => By::Id(value),
+        "name" => By::Name(value),
+        _ => return Err(Error::external(format!("{} is not supported", by)))?,
+    };
+    Ok(by)
+}
+
 struct Element {
     elem: WebElement,
 }
@@ -24,12 +33,11 @@ impl UserData for Element {
         methods.add_async_method(
             "find",
             |lua, this, (by, value): (String, String)| async move {
-                let by = match by.as_str() {
-                    "id" => By::Id(value),
-                    "name" => By::Name(value),
-                    _ => return Err(Error::external(format!("{} is not supported", by))),
-                };
-                let elem = this.elem.find(by).await.map_err(Error::external)?;
+                let elem = this
+                    .elem
+                    .find(create_by(by, value)?)
+                    .await
+                    .map_err(Error::external)?;
                 let elem_userdata = lua.create_userdata(Element { elem });
                 Ok(elem_userdata)
             },
@@ -51,14 +59,11 @@ impl UserData for Driver {
         methods.add_async_method(
             "find",
             |lua, this, (by, value): (String, String)| async move {
-                let by = match by.as_str() {
-                    "id" => By::Id(value),
-                    "name" => By::Name(value),
-                    _ => return Err(Error::external(format!("{} is not supported", by))),
-                };
-
-                let elem = this.driver.find(by).await.map_err(Error::external)?;
-
+                let elem = this
+                    .driver
+                    .find(create_by(by, value)?)
+                    .await
+                    .map_err(Error::external)?;
                 let elem_userdata = lua.create_userdata(Element { elem });
                 Ok(elem_userdata)
             },
