@@ -7,18 +7,42 @@ use crate::test_runner::{Describe, TestCase, TestRunner};
 
 fn create_test_fn(lua: &Lua, describe: Rc<RefCell<Describe>>) -> Result<Function> {
     let test_fn = lua.create_function(move |_, (desc, cb): (String, Function)| {
-        describe.borrow_mut().add_test(TestCase { desc, cb });
+        describe.borrow_mut().tests.push(TestCase { desc, cb });
         Ok(())
     })?;
     Ok(test_fn)
 }
 
+fn create_before_all_fn(lua: &Lua, describe: Rc<RefCell<Describe>>) -> Result<Function> {
+    let before_all_fn = lua.create_function(move |_, cb: Function| {
+        describe.borrow_mut().before_all.push(cb);
+        Ok(())
+    })?;
+    Ok(before_all_fn)
+}
+
 fn create_before_each_fn(lua: &Lua, describe: Rc<RefCell<Describe>>) -> Result<Function> {
     let before_each_fn = lua.create_function(move |_, cb: Function| {
-        describe.borrow_mut().add_before_each_fn(cb);
+        describe.borrow_mut().before_each.push(cb);
         Ok(())
     })?;
     Ok(before_each_fn)
+}
+
+fn create_after_each_fn(lua: &Lua, describe: Rc<RefCell<Describe>>) -> Result<Function> {
+    let after_each_fn = lua.create_function(move |_, cb: Function| {
+        describe.borrow_mut().after_each.push(cb);
+        Ok(())
+    })?;
+    Ok(after_each_fn)
+}
+
+fn create_after_all_fn(lua: &Lua, describe: Rc<RefCell<Describe>>) -> Result<Function> {
+    let after_all_fn = lua.create_function(move |_, cb: Function| {
+        describe.borrow_mut().after_all.push(cb);
+        Ok(())
+    })?;
+    Ok(after_all_fn)
 }
 
 struct Runner {
@@ -31,10 +55,12 @@ impl UserData for Runner {
             let describe = Rc::new(RefCell::new(Describe::new(desc)));
 
             let test_fn = create_test_fn(lua, describe.clone())?;
-            let before_each_fn = create_before_each_fn(lua, describe.clone())?;
 
             let hook_table = lua.create_table()?;
-            hook_table.set("before_each", before_each_fn)?;
+            hook_table.set("before_all", create_before_all_fn(lua, describe.clone())?)?;
+            hook_table.set("before_each", create_before_each_fn(lua, describe.clone())?)?;
+            hook_table.set("after_each", create_after_each_fn(lua, describe.clone())?)?;
+            hook_table.set("after_all", create_after_all_fn(lua, describe.clone())?)?;
 
             cb.call::<()>((test_fn, hook_table))?;
             this.test_runner
